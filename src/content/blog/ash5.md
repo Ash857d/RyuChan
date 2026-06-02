@@ -1,7 +1,7 @@
 ---
 title: Telegram登录教程
 description: 按照教程登录，实在不懂的截图给客服
-pubDate: '2026-04-18T03:08'
+pubDate: 2026-04-18T03:08
 image: /images/ash5/330e57b7b35bb017.jpg
 draft: false
 tags:
@@ -35,7 +35,7 @@ password: '6681'
 # Telegram保姆级登录教程
 
 
-视频登录教程：https://pan.quark.cn/s/547d76e922a5#/list/share
+视频登录教程：https://files.catbox.moe/cq5ul6.MP4
 
 
 ****我们会发送账号，红色框是美国号，美国号的区号是+1****
