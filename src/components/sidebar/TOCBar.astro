@@ -1,0 +1,281 @@
+---
+import { Icon } from "astro-icon/components";
+import Card from "../temple/Card.astro";
+import type { TOCBarProps } from "@interfaces/data";
+
+const { headings = [], showTOC = true } = Astro.props as TOCBarProps;
+---
+
+{
+  showTOC && headings.length > 0 && (
+    <div id="toc-container" class="mt-4 z-10 md:max-h-[calc(100vh-2rem)] ">
+      <Card>
+        <div class="p-4">
+          <nav class="toc-nav max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-none relative">
+            <div
+              id="active-indicator"
+              class="absolute bg-primary/10 rounded-lg opacity-0 shadow-sm pointer-events-none z-0"
+            />
+            <ul class="space-y-0 relative z-10">
+              {headings.map((heading, index) => (
+                <li>
+                  <a
+                    href={`#heading-${index}`}
+                    data-heading-slug={heading.slug}
+                    data-heading-depth={heading.depth}
+                    data-index={index}
+                    class={`toc-link relative flex items-center py-2 px-2 rounded-lg ${heading.depth === 1 ? "font-medium" : ""}`}
+                    style={`padding-left: ${12 + (heading.depth - 1) * 16}px;`}
+                  >
+                    <Icon
+                      name="tabler:chevron-right"
+                      class="icon-indicator absolute left-1 opacity-0 transition-all duration-200 w-4 h-4 text-primary"
+                    />
+                    <span class="link-text transition-transform duration-200">{heading.text}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+<style>
+  .toc-link:hover .link-text {
+    transform: translateX(2px);
+  }
+
+  .toc-link.active {
+    color: var(--p);
+    font-weight: 500;
+  }
+
+  .toc-link.active .icon-indicator {
+    opacity: 1;
+    transform: translateX(1px);
+  }
+
+  .toc-link:hover .icon-indicator {
+    opacity: 0.5;
+  }
+</style>
+
+<script>
+  document.addEventListener("astro:page-load", () => {
+    // ========== 可调整参数 ==========
+    // 导航栏高度（单位：px），请根据您的实际导航栏修改（例如 64、72、80）
+    const NAVBAR_HEIGHT_FIXED = 80;   // 👈 改成您网页顶部导航栏的实际高度
+    // 点击跳转时的额外偏移（正值让标题更靠下，负值更靠上），用于微调
+    const CLICK_OFFSET = 10;          // 👈 可微调
+    // ===============================
+
+    // 动态获取导航栏高度（优先使用固定值，否则自动检测）
+    function getNavbarHeight() {
+      if (NAVBAR_HEIGHT_FIXED && NAVBAR_HEIGHT_FIXED > 0) return NAVBAR_HEIGHT_FIXED;
+      const navbar = document.querySelector('nav') || document.querySelector('.navbar') || document.querySelector('header');
+      return navbar ? navbar.offsetHeight : 80;
+    }
+
+    // 为所有没有 id 的标题生成唯一 id（避免重复）
+    const allHeadings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+    const usedIds = new Set();
+    allHeadings.forEach((heading, idx) => {
+      if (!heading.id) {
+        const text = heading.textContent?.trim() || `heading-${idx}`;
+        let slug = text
+          .toLowerCase()
+          .replace(/[^\w\u4e00-\u9fa5]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+        if (!slug) slug = `heading-${idx}`;
+        let finalSlug = slug;
+        let counter = 0;
+        while (usedIds.has(finalSlug) || document.getElementById(finalSlug)) {
+          counter++;
+          finalSlug = `${slug}-${counter}`;
+        }
+        usedIds.add(finalSlug);
+        heading.id = finalSlug;
+      } else {
+        usedIds.add(heading.id);
+      }
+    });
+
+    // 缓存 DOM 元素
+    const tocNav = document.querySelector(".toc-nav") as HTMLElement;
+    const activeIndicator = document.getElementById("active-indicator") as HTMLElement;
+    const tocLinks = Array.from(document.querySelectorAll(".toc-nav a")) as HTMLAnchorElement[];
+
+    if (!tocNav || !activeIndicator || tocLinks.length === 0) return;
+
+    // 获取所有标题（现在它们都有唯一 id）
+    const headings = document.querySelectorAll("h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]");
+    if (headings.length === 0) return;
+
+    let activeLink: HTMLAnchorElement | null = null;
+    let disableObserverUpdates = false;
+    let resizeTimer: number | null = null;
+
+    // 强制将标题 id 与 TOC 链接的 href 同步（确保一一对应）
+    // 注意：保留原有 id 但建立映射，而不是强制重命名
+    const idMap = new Map();
+    headings.forEach((heading, index) => {
+      const originalId = heading.id;
+      const newId = `heading-${index}`;
+      if (originalId !== newId) {
+        heading.id = newId;
+        idMap.set(originalId, newId);
+      }
+    });
+    // 更新 TOC 链接的 href
+    tocLinks.forEach((link, idx) => {
+      link.setAttribute('href', `#heading-${idx}`);
+    });
+
+    // 定位活动指示器
+    function updateActiveIndicator(link: HTMLAnchorElement, animate = true): void {
+      if (!link) return;
+      const headingDepth = parseInt(link.getAttribute("data-heading-depth") || "1");
+      activeIndicator.style.transition = animate
+        ? "all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)"
+        : "opacity 0.3s ease-in-out";
+      requestAnimationFrame(() => {
+        activeIndicator.style.top = `${link.offsetTop}px`;
+        activeIndicator.style.height = `${link.offsetHeight}px`;
+        activeIndicator.style.opacity = "1";
+        activeIndicator.style.left = `${(headingDepth - 1) * 16}px`;
+        activeIndicator.style.width = `calc(100% - ${(headingDepth - 1) * 16}px)`;
+      });
+    }
+
+    function isElementInViewport(el: HTMLElement, container: HTMLElement): boolean {
+      const rect = el.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      return rect.top >= containerRect.top && rect.bottom <= containerRect.bottom;
+    }
+
+    function scrollTOCToActiveItem(link: HTMLElement): void {
+      if (isElementInViewport(link, tocNav)) return;
+      const tocLinkTop = link.offsetTop;
+      const navHeight = tocNav.clientHeight;
+      const scrollOffset = Math.max(0, tocLinkTop - navHeight / 2 + link.offsetHeight / 2);
+      tocNav.scrollTo({ top: scrollOffset, behavior: "smooth" });
+    }
+
+    function setActiveLink(link: HTMLAnchorElement): void {
+      if (activeLink === link) return;
+      if (activeLink) activeLink.classList.remove("active");
+      link.classList.add("active");
+      activeLink = link;
+      updateActiveIndicator(link);
+      if (!isElementInViewport(link, tocNav)) {
+        scrollTOCToActiveItem(link);
+      }
+    }
+
+    // ========== 修复点击跳转（精确偏移）==========
+    tocNav.addEventListener("click", (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const link = target.closest("a") as HTMLAnchorElement | null;
+      if (!link) return;
+      e.preventDefault();
+      const href = link.getAttribute("href") || "";
+      if (!href || !href.startsWith("#")) return;
+      const headingId = href.substring(1);
+      const targetHeading = document.getElementById(headingId);
+      if (targetHeading) {
+        disableObserverUpdates = true;
+        setActiveLink(link);
+        
+        // 获取导航栏高度
+        const navbarHeight = getNavbarHeight();
+        // 计算目标位置（减去导航栏高度和额外偏移）
+        const targetPosition = targetHeading.getBoundingClientRect().top + window.scrollY - navbarHeight - CLICK_OFFSET;
+        window.scrollTo({ top: targetPosition, behavior: "smooth" });
+        history.pushState(null, "", href);
+        
+        setTimeout(() => {
+          disableObserverUpdates = false;
+        }, 1000);
+      }
+    });
+
+    // 窗口大小变化时重新调整指示器
+    window.addEventListener(
+      "resize",
+      () => {
+        if (resizeTimer) clearTimeout(resizeTimer);
+        resizeTimer = window.setTimeout(() => {
+          if (activeLink) updateActiveIndicator(activeLink, false);
+        }, 100);
+      },
+      { passive: true },
+    );
+
+    // ========== 修复滚动高亮（使用更精确的 IntersectionObserver）==========
+    const navbarHeight = getNavbarHeight();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (disableObserverUpdates) return;
+        // 找出所有进入视口的标题
+        const visibleEntries = entries.filter(entry => entry.isIntersecting);
+        if (visibleEntries.length === 0) return;
+        // 选择距离视口顶部最近的标题（即第一个出现在导航栏下方的）
+        let bestEntry = visibleEntries[0];
+        let bestDistance = Infinity;
+        for (const entry of visibleEntries) {
+          const rect = entry.boundingClientRect;
+          const distance = Math.abs(rect.top - navbarHeight);
+          if (distance < bestDistance) {
+            bestDistance = distance;
+            bestEntry = entry;
+          }
+        }
+        const id = bestEntry.target.getAttribute("id");
+        if (!id) return;
+        const tocLink = document.querySelector(`.toc-nav a[href="#${id}"]`) as HTMLAnchorElement | null;
+        if (tocLink && tocLink !== activeLink) {
+          setActiveLink(tocLink);
+        }
+      },
+      {
+        // 设置 rootMargin 为导航栏高度负值，使观察区域从导航栏下方开始
+        rootMargin: `-${navbarHeight}px 0px -70% 0px`,
+        threshold: [0, 0.25],
+      }
+    );
+
+    headings.forEach((heading) => observer.observe(heading));
+
+    // 初始设置：根据 URL hash 或第一个标题高亮
+    setTimeout(() => {
+      const hash = window.location.hash.substring(1);
+      const initialHeading = hash ? document.getElementById(hash) : headings[0];
+      if (initialHeading) {
+        const id = initialHeading.getAttribute("id");
+        if (id) {
+          const tocLink = document.querySelector(`.toc-nav a[href="#${id}"]`) as HTMLAnchorElement | null;
+          if (tocLink) setActiveLink(tocLink);
+        }
+      }
+    }, 200);
+
+    // 监听 hash 变化
+    window.addEventListener("hashchange", () => {
+      if (disableObserverUpdates) return;
+      const hash = window.location.hash.substring(1);
+      if (!hash) return;
+      disableObserverUpdates = true;
+      const heading = document.getElementById(hash);
+      if (heading) {
+        const tocLink = document.querySelector(`.toc-nav a[href="#${hash}"]`) as HTMLAnchorElement | null;
+        if (tocLink) setActiveLink(tocLink);
+      }
+      setTimeout(() => {
+        disableObserverUpdates = false;
+      }, 1000);
+    });
+  });
+</script>

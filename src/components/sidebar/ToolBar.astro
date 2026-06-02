@@ -1,0 +1,53 @@
+---
+import Card from "../temple/Card.astro";
+import ScrollToTop from "../widgets/ScrollToTop.astro";
+import ThemeToggle from "../widgets/ThemeToggle.astro";
+import { Icon } from "astro-icon/components";
+import { t } from "@config";
+---
+
+<Card>
+  <div class="toolbar-container p-4">
+    <!-- 使用更灵活的网格布局：小屏2列，中屏4列 -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 justify-items-center items-center gap-4">
+      <!-- 标签页按钮 -->
+      <a
+        href="/blog/tags"
+        class="btn btn-circle btn-md border-base-content/20 bg-base-100 shadow-sm hover:scale-110 transition-transform"
+        aria-label={t("label.tagPage")}
+        title={t("label.tagPage")}
+      >
+        <Icon name="lucide:tag" class="w-5 h-5" />
+      </a>
+
+      <!-- 分类页按钮 -->
+      <a
+        href="/blog/categories"
+        class="btn btn-circle btn-md border-base-content/20 bg-base-100 shadow-sm hover:scale-110 transition-transform"
+        aria-label={t("label.categoryPage")}
+        title={t("label.categoryPage")}
+      >
+        <Icon name="lucide:folder" class="w-5 h-5" />
+      </a>
+
+      <!-- 归档页按钮 -->
+      <a
+        href="/blog/archives"
+        class="btn btn-circle btn-md border-base-content/20 bg-base-100 shadow-sm hover:scale-110 transition-transform"
+        aria-label={t("label.archivePage")}
+        title={t("label.archivePage")}
+      >
+        <Icon name="lucide:archive" class="w-5 h-5" />
+      </a>
+
+      <!-- 主题切换 -->
+      <ThemeToggle className="sidebar-theme" />
+
+      <!-- 额外的插槽，用于扩展按钮（例如目录按钮） -->
+      <slot />
+    </div>
+  </div>
+</Card>
+
+<!-- 滚动到顶部按钮（固定在右下角） -->
+<ScrollToTop />
