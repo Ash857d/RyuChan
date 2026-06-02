@@ -1,1 +1,97 @@
-404: Not Found
+name: 自动更新密码列表
+
+on:
+  push:
+    paths:
+      - 'src/content/blog/*.md'
+      - 'src/content/blog/*.mdx'
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: 扫描并生成密码列表
+        run: |
+          python3 << 'EOF'
+          import json
+          import re
+          from pathlib import Path
+          from datetime import datetime
+          
+          # 只扫描 src/content/blog 文件夹下的 .md 和 .mdx 文件（不包含子文件夹）
+          blog_dir = Path('src/content/blog')
+          posts = []
+          
+          if blog_dir.exists():
+              # 只获取当前目录下的文件，不递归子文件夹
+              md_files = list(blog_dir.glob('*.md')) + list(blog_dir.glob('*.mdx'))
+              
+              print(f"📁 找到 {len(md_files)} 个文章文件")
+              
+              for md_file in md_files:
+                  try:
+                      content = md_file.read_text(encoding='utf-8')
+                      
+                      # 提取 password
+                      pwd_match = re.search(r'^password:\s*["\']?([^"\'\n]+)', content, re.MULTILINE)
+                      
+                      if pwd_match:
+                          password = pwd_match.group(1).strip()
+                          
+                          # 提取 title
+                          title_match = re.search(r'^title:\s*["\']?([^"\'\n]+)', content, re.MULTILINE)
+                          title = title_match.group(1).strip() if title_match else md_file.stem
+                          
+                          posts.append({
+                              'title': title,
+                              'slug': md_file.stem,
+                              'password': password
+                          })
+                          print(f'  ✅ {title} → {password}')
+                      else:
+                          print(f'  ⏭️ 跳过（无密码）: {md_file.name}')
+                          
+                  except Exception as e:
+                      print(f'  ❌ 错误 {md_file.name}: {e}')
+              
+              # 按标题排序
+              posts.sort(key=lambda x: x['title'])
+              
+              # 生成 JSON
+              result = {
+                  'lastUpdated': datetime.now().isoformat(),
+                  'total': len(posts),
+                  'posts': posts
+              }
+              
+              with open('posts.json', 'w', encoding='utf-8') as f:
+                  json.dump(result, f, ensure_ascii=False, indent=2)
+              
+              print(f'\n🎉 完成！生成 {len(posts)} 篇加密文章')
+          else:
+              print(f'❌ 目录不存在: {blog_dir}')
+              # 创建空文件
+              result = {
+                  'lastUpdated': datetime.now().isoformat(),
+                  'total': 0,
+                  'posts': []
+              }
+              with open('posts.json', 'w', encoding='utf-8') as f:
+                  json.dump(result, f, ensure_ascii=False, indent=2)
+          EOF
+      
+      - name: 提交更改
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 🤖 自动更新密码列表
+          file_pattern: posts.json
+          commit_user_name: github-actions[bot]
+          commit_user_email: github-actions[bot]@users.noreply.github.com
