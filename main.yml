@@ -1,0 +1,69 @@
+name: 自动生成密码列表
+
+on:
+  push:
+    paths:
+      - 'src/content/blog/**/*.md'
+      - 'src/content/blog/**/*.mdx'
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: 使用Python生成posts.json
+        run: |
+          python << EOF
+          import json
+          import os
+          import re
+          from pathlib import Path
+          
+          # 扫描博客文章目录
+          blog_path = Path('src/content/blog')
+          posts = []
+          
+          # 递归查找所有md/mdx文件
+          for md_file in blog_path.rglob('*.md'):
+              try:
+                  content = md_file.read_text(encoding='utf-8')
+                  
+                  # 提取title
+                  title_match = re.search(r'title:\s*["\']?([^"\'\n]+)["\']?', content)
+                  # 提取password
+                  password_match = re.search(r'password:\s*["\']?([^"\'\n]+)["\']?', content)
+                  
+                  if password_match:
+                      title = title_match.group(1) if title_match else md_file.stem
+                      posts.append({
+                          'title': title.strip(),
+                          'slug': md_file.stem,
+                          'password': password_match.group(1).strip()
+                      })
+              except Exception as e:
+                  print(f'Error reading {md_file}: {e}')
+          
+          # 生成posts.json
+          output = {
+              'lastUpdated': '2026-05-07T12:00:00Z',
+              'total': len(posts),
+              'posts': posts
+          }
+          
+          with open('posts.json', 'w', encoding='utf-8') as f:
+              json.dump(output, f, ensure_ascii=False, indent=2)
+          
+          print(f'✅ 生成了 {len(posts)} 篇加密文章')
+          EOF
+      
+      - name: 提交更改
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add posts.json
+          git diff --quiet && git diff --staged --quiet || git commit -m "🤖 自动更新密码列表 [skip ci]"
+          git push
