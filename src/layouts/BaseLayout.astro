@@ -1,0 +1,385 @@
+---
+import {
+  SITE_TAB,
+  SITE_DESCRIPTION,
+  SITE_FAVICON,
+  SITE_LANGUAGE,
+  SITE_THEME,
+  umamiConfig,
+  SITE_PAGES,
+} from "@config";
+import { ClientRouter } from "astro:transitions";
+import ElementCrossing from "astro-vtbot/components/ElementCrossing.astro";
+import PointerOnNavigation from "astro-vtbot/components/PointerOnNavigation.astro";
+import Header from "@components/Header.astro";
+import Sidebar from "@components/Sidebar.astro";
+import Footer from "@components/Footer.astro";
+import Navbar from "@components/Navbar.astro";
+import Banner from "@components/Banner.astro";
+import MobileTOC from "@components/widgets/MobileTOC.astro";
+import GlobalAudio from "@components/widgets/GlobalAudio.astro";
+
+const {
+  title,
+  image,
+  headings = [],
+  showTOC = false,
+  isIndexed = true,
+  isPostPage = false,
+  showSidebar = true,
+  showBanner = true,
+} = Astro.props;
+
+// 根据当前路径从配置中获取 Banner 内容
+const currentPath = Astro.url.pathname.replace("/", "") || "home";
+const pageConfig = SITE_PAGES?.[currentPath];
+const bannerTitle = pageConfig?.title || title || "";
+const bannerSubtitle = pageConfig?.subtitle || "";
+---
+
+<!doctype html>
+<html
+  lang={SITE_LANGUAGE}
+  style="background-color: var(--custom-page-bg)"
+  data-theme={SITE_THEME.light}
+  data-theme-type="light"
+>
+  <head>
+    <ClientRouter />
+    <ElementCrossing />
+    <PointerOnNavigation />
+    <Header
+      title={title}
+      description={SITE_DESCRIPTION}
+      favicon={SITE_FAVICON}
+      image={image}
+    />
+    <title>{`${title} - ${SITE_TAB}`}</title>
+
+    <!-- Umami分析（自建） -->
+    {
+      umamiConfig.enable && umamiConfig.websiteId && (
+        <script
+          is:inline
+          defer
+          src={`${umamiConfig.baseUrl}/script.js`}
+          data-website-id={umamiConfig.websiteId}
+        />
+      )
+    }
+    {
+      umamiConfig.enable && (
+        <script is:inline defer src="/js/umami-share.js"></script>
+      )
+    }
+
+    <!-- Microsoft Clarity -->
+    <script type="text/javascript" is:inline>
+      (function (c, l, a, r, i, t, y) {
+        c[a] =
+          c[a] ||
+          function () {
+            (c[a].q = c[a].q || []).push(arguments);
+          };
+        t = l.createElement(r);
+        t.async = 1;
+        t.src = "https://www.clarity.ms/tag/" + i;
+        y = l.getElementsByTagName(r)[0];
+        y.parentNode.insertBefore(t, y);
+      })(window, document, "clarity", "script", "skz108rus8");
+    </script>
+
+    <!-- 主题管理脚本 -->
+    <script define:vars={{ SITE_THEME }} is:inline>
+      (function () {
+        const storedTheme = localStorage.getItem("theme");
+        const storedBannerMode = localStorage.getItem("banner-mode") || "normal";
+        const prefersDark = window.matchMedia(
+          "(prefers-color-scheme: dark)",
+        ).matches;
+        
+        let theme;
+        if (storedTheme) {
+          theme = storedTheme;
+        } else {
+          theme = SITE_THEME.light;
+          localStorage.setItem("theme", theme);
+        }
+        document.documentElement.setAttribute("data-theme", theme);
+        document.documentElement.setAttribute("data-banner-mode", storedBannerMode);
+        
+        const isDark = theme === SITE_THEME.dark || ['dark', 'synthwave', 'halloween', 'forest', 'black', 'luxury', 'dracula', 'business', 'night', 'coffee'].includes(theme);
+        const themeType = isDark ? "dark" : "light";
+        document.documentElement.setAttribute("data-theme-type", themeType);
+        window
+          .matchMedia("(prefers-color-scheme: dark)")
+          .addEventListener("change", (e) => {
+            if (!localStorage.getItem("theme")) {
+              const newTheme = e.matches ? SITE_THEME.dark : SITE_THEME.light;
+              document.documentElement.setAttribute("data-theme", newTheme);
+              const newThemeType = e.matches ? "dark" : "light";
+              document.documentElement.setAttribute(
+                "data-theme-type",
+                newThemeType,
+              );
+              localStorage.setItem("theme", newTheme);
+            }
+          });
+      })();
+    </script>
+  </head>
+
+  <!-- 移除上边距，让Banner从顶部开始 -->
+  <body
+    class="flex flex-col min-h-screen bg-[var(--banner-wave-bg)]"
+    {...isIndexed ? { "data-pagefind-body": true } : {}}
+  >
+    {showBanner && <Banner title={bannerTitle} subtitle={bannerSubtitle} />}
+    <Navbar />
+    <div class={`max-w-blog mx-auto w-full flex-grow page-content-animate ${showBanner ? 'mt-8' : 'mt-24'}`}>
+      <div
+        class={`grid grid-cols-1 ${showSidebar ? "md:grid-cols-5 lg:grid-cols-4" : ""} gap-4 px-4 pb-4 h-full`}
+      >
+        <main
+          class={`col-span-1 ${showSidebar ? "md:col-span-4 lg:col-span-3" : "w-full"} bg-transparent order-1 md:order-2 flex flex-col gap-4`}
+        >
+          <div class="flex-grow flex flex-col gap-4">
+            <slot />
+          </div>
+          <Footer />
+        </main>
+        {
+          showSidebar && (
+            <aside class="col-span-1 bg-transparent order-2 md:order-1 md:top-4 hidden md:block">
+              <Sidebar headings={headings} showTOC={showTOC} />
+              <slot name="sidebar" />
+            </aside>
+          )
+        }
+      </div>
+    </div>
+
+    <MobileTOC headings={headings} showTOC={showTOC} />
+    <GlobalAudio />
+
+    <!-- 其余脚本保持不变 -->
+    <script define:vars={{ SITE_THEME }} is:inline>
+      document.addEventListener("astro:after-swap", () => {
+        const storedTheme = localStorage.getItem("theme");
+        const storedBannerMode = localStorage.getItem("banner-mode") || "normal";
+        
+        if (storedTheme) {
+          document.documentElement.setAttribute("data-theme", storedTheme);
+          const isDark = storedTheme === SITE_THEME.dark || ['dark', 'synthwave', 'halloween', 'forest', 'black', 'luxury', 'dracula', 'business', 'night', 'coffee'].includes(storedTheme);
+          const themeType = isDark ? "dark" : "light";
+          document.documentElement.setAttribute("data-theme-type", themeType);
+        }
+        
+        document.documentElement.setAttribute("data-banner-mode", storedBannerMode);
+      });
+    </script>
+
+    <script is:inline>
+      document.addEventListener("astro:page-load", () => {
+        document.querySelectorAll(".btn-copy").forEach((button) => {
+          button.addEventListener("click", async () => {
+            const codeBlock = button.closest(".ryuchan-code");
+            const code = codeBlock.querySelector("code").textContent;
+            const copyIcon = button.querySelector(
+              ".ryuchan-code-toolbar-copy-icon",
+            );
+            const successIcon = button.querySelector(
+              ".ryuchan-code-toolbar-copy-success",
+            );
+            try {
+              await navigator.clipboard.writeText(code);
+              copyIcon.classList.add("hidden");
+              successIcon.classList.remove("hidden");
+              button.classList.add("copy-success");
+              setTimeout(() => {
+                copyIcon.classList.remove("hidden");
+                successIcon.classList.add("hidden");
+                button.classList.remove("copy-success");
+              }, 2000);
+            } catch (err) {
+              console.error("Failed to copy:", err);
+            }
+          });
+        });
+      });
+    </script>
+
+    <!-- 移动端优化版密码处理脚本 -->
+    <script is:inline>
+      (function() {
+        const CACHE_KEY = 'decrypted_content_';
+        const CACHE_EXPIRY = 10 * 60 * 1000;
+
+        function initPassword() {
+          const container = document.querySelector('.encrypted-container');
+          if (!container) return;
+          if (container.getAttribute('data-decrypted') === 'true') return;
+
+          const passwordCard = container.querySelector('.password-card');
+          const passwordInput = container.querySelector('#password-input');
+          const decryptBtn = container.querySelector('#decrypt-btn');
+          const errorMsg = container.querySelector('#error-msg');
+          const decryptedContent = container.querySelector('.decrypted-content');
+          const editButton = container.querySelector('#edit-button-container');
+
+          if (!passwordCard || !passwordInput || !decryptBtn || !errorMsg || !decryptedContent) {
+            setTimeout(initPassword, 100);
+            return;
+          }
+
+          let storedPassword = container.getAttribute('data-password') || '';
+          storedPassword = storedPassword.trim();
+          const encryptedData = container.getAttribute('data-encrypted');
+          const slug = container.getAttribute('data-slug');
+
+          // 缓存恢复
+          const cacheKey = CACHE_KEY + slug;
+          const cached = sessionStorage.getItem(cacheKey);
+          if (cached) {
+            try {
+              const { html, expiry } = JSON.parse(cached);
+              if (expiry > Date.now()) {
+                decryptedContent.innerHTML = html;
+                decryptedContent.style.display = 'block';
+                passwordCard.style.display = 'none';
+                if (editButton) editButton.style.display = 'flex';
+                container.setAttribute('data-decrypted', 'true');
+                return;
+              } else {
+                sessionStorage.removeItem(cacheKey);
+              }
+            } catch(e) {}
+          }
+
+          // 创建全屏遮罩层（移动端优化：touch-action + 固定定位）
+          const overlay = document.createElement('div');
+          overlay.id = 'password-modal-overlay';
+          overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
+          `;
+          document.body.appendChild(overlay);
+          overlay.appendChild(passwordCard);
+          passwordCard.style.margin = '0';
+          passwordCard.style.maxWidth = '28rem';
+          passwordCard.style.width = '100%';
+          
+          // 彻底锁定页面滚动（移动端+桌面端）
+          const scrollY = window.scrollY;
+          document.body.style.overflow = 'hidden';
+          document.body.style.position = 'fixed';
+          document.body.style.top = `-${scrollY}px`;
+          document.body.style.width = '100%';
+
+          // 提升导航栏层级，确保可点击
+          const navbar = document.querySelector('nav, .navbar, header');
+          if (navbar) navbar.style.zIndex = '10001';
+
+          async function decryptWithWebCrypto(encrypted, pwd) {
+            const parts = encrypted.split(':');
+            if (parts.length !== 3) throw new Error('Invalid format');
+            const salt = Uint8Array.from(atob(parts[0]), c=>c.charCodeAt(0));
+            const iv = Uint8Array.from(atob(parts[1]), c=>c.charCodeAt(0));
+            const data = Uint8Array.from(atob(parts[2]), c=>c.charCodeAt(0));
+            const keyMat = await crypto.subtle.importKey('raw', new TextEncoder().encode(pwd), 'PBKDF2', false, ['deriveKey']);
+            const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' }, keyMat, { name: 'AES-CBC', length: 256 }, false, ['decrypt']);
+            const decrypted = await crypto.subtle.decrypt({ name: 'AES-CBC', iv }, key, data.buffer);
+            return new TextDecoder().decode(decrypted);
+          }
+
+          async function handleDecrypt() {
+            const userPwd = passwordInput.value.trim();
+            if (!userPwd) {
+              errorMsg.textContent = '请输入密码';
+              errorMsg.classList.remove('hidden');
+              return;
+            }
+            if (userPwd !== storedPassword) {
+              errorMsg.textContent = '密码错误，请重试';
+              errorMsg.classList.remove('hidden');
+              return;
+            }
+            try {
+              const html = await decryptWithWebCrypto(encryptedData, userPwd);
+              decryptedContent.innerHTML = html;
+              decryptedContent.style.display = 'block';
+              overlay.remove();
+              passwordCard.style.display = 'none';
+              if (editButton) editButton.style.display = 'flex';
+              container.setAttribute('data-decrypted', 'true');
+              
+              // 恢复页面滚动
+              document.body.style.overflow = '';
+              document.body.style.position = '';
+              document.body.style.top = '';
+              document.body.style.width = '';
+              window.scrollTo(0, scrollY);
+              
+              sessionStorage.setItem(cacheKey, JSON.stringify({ html, expiry: Date.now() + CACHE_EXPIRY }));
+              errorMsg.textContent = '';
+            } catch(err) {
+              console.error(err);
+              errorMsg.textContent = '解密失败，密码错误或内容损坏';
+              errorMsg.classList.remove('hidden');
+            }
+          }
+
+          decryptBtn.addEventListener('click', handleDecrypt);
+          passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleDecrypt();
+          });
+        }
+
+        function run() {
+          setTimeout(initPassword, 100);
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', run);
+        } else {
+          run();
+        }
+        document.addEventListener('astro:page-load', run);
+      })();
+    </script>
+
+    <style is:inline>
+      .btn-copy {
+        position: relative;
+        overflow: hidden;
+      }
+      .copy-success {
+        animation: pulse 0.5s ease-in-out;
+      }
+      .ryuchan-code-toolbar-copy-success svg {
+        color: #10b981;
+      }
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.1);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+    </style>
+  </body>
+</html>
