@@ -1,7 +1,7 @@
 ---
 title: X登录教程
 description: 按照教程登录，实在不懂的截图联系客服
-pubDate: '2026-04-18T03:03'
+pubDate: 2026-04-18T03:03
 image: /images/ash3/392d4711732e4121.jpg
 draft: false
 tags:
@@ -21,7 +21,7 @@ password: '8066'
 -----------------
 
 ---
-安卓app安装登录教程：https://pan.quark.cn/s/d72d22450451#/list/share
+安卓app安装登录教程视频：https://pan.quark.cn/s/d72d22450451#/list/share
 
 客服会发送给你一组信息
 如下：
