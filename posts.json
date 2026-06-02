@@ -1,31 +1,31 @@
 {
-  "lastUpdated": "2026-06-02T07:42:48.653Z",
+  "lastUpdated": "2026-06-02T17:01:14.250Z",
   "total": 5,
   "posts": [
     {
       "title": "Telegram群组敏感限制",
       "slug": "ash6",
-      "password": "6743"
+      "password": "9440"
     },
     {
       "title": "Telegram登录教程",
       "slug": "ash5",
-      "password": "6681"
+      "password": "8015"
     },
     {
       "title": "X登录教程",
       "slug": "ash3",
-      "password": "8066"
+      "password": "8661"
     },
     {
       "title": "Telegram通行密钥(Passkeys)设置教程",
       "slug": "ash2",
-      "password": "9938"
+      "password": "2861"
     },
     {
       "title": "TikTok免拔卡教程",
       "slug": "ash1",
-      "password": "7263"
+      "password": "7366"
     }
   ]
 }

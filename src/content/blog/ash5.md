@@ -1,7 +1,7 @@
 ---
 title: Telegram登录教程
 description: 按照教程登录，实在不懂的截图给客服
-pubDate: 2026-04-18T03:08
+pubDate: '2026-04-18T03:08'
 image: /images/ash5/330e57b7b35bb017.jpg
 draft: false
 tags:
@@ -11,7 +11,7 @@ tags:
 categories:
   - 教程
 badge: pin - 置顶文章
-password: '6681'
+password: '8015'
 ---
 > &#x26a0;&#xfe0f; **警告**
 > - 本教程旨在分享，无任何不良引导，禁止从事任何违法活动！参与国家分裂行为！任何行为与本站无关！！！

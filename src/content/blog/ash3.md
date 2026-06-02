@@ -1,7 +1,7 @@
 ---
 title: X登录教程
 description: 按照教程登录，实在不懂的截图联系客服
-pubDate: 2026-04-18T03:03
+pubDate: '2026-04-18T03:03'
 image: /images/ash3/392d4711732e4121.jpg
 draft: false
 tags:
@@ -13,7 +13,7 @@ tags:
 categories:
   - 教程
 badge: pin
-password: '8066'
+password: '8661'
 ---
 # 推特登录教程
 
