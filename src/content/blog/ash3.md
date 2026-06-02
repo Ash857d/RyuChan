@@ -21,7 +21,7 @@ password: '8066'
 -----------------
 
 ---
-安卓app安装登录教程视频：https://pan.quark.cn/s/d72d22450451#/list/share
+安卓app安装登录教程视频：https://files.catbox.moe/9otqkt.mp4
 
 客服会发送给你一组信息
 如下：
