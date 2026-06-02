@@ -1,1 +1,69 @@
-404: Not Found
+name: 更新密码列表
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'src/content/blog/**/*.md'
+      - 'src/content/blog/**/*.mdx'
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-posts:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: 扫描文章生成 posts.json
+        run: |
+          python3 << 'EOF'
+          import json
+          import re
+          from pathlib import Path
+          from datetime import datetime
+          
+          blog_dir = Path('src/content/blog')
+          posts = []
+          
+          if blog_dir.exists():
+              for md_file in blog_dir.glob('*.md'):
+                  try:
+                      content = md_file.read_text(encoding='utf-8')
+                      pwd_match = re.search(r'^password:\s*["\']?([^"\'\n]+)', content, re.MULTILINE)
+                      
+                      if pwd_match:
+                          title_match = re.search(r'^title:\s*["\']?([^"\'\n]+)', content, re.MULTILINE)
+                          title = title_match.group(1).strip() if title_match else md_file.stem
+                          
+                          posts.append({
+                              'title': title,
+                              'slug': md_file.stem,
+                              'password': pwd_match.group(1).strip()
+                          })
+                          print(f'✅ {title}')
+                  except Exception as e:
+                      print(f'❌ {md_file.name}: {e}')
+          
+          with open('posts.json', 'w', encoding='utf-8') as f:
+              json.dump({
+                  'lastUpdated': datetime.now().isoformat(),
+                  'total': len(posts),
+                  'posts': posts
+              }, f, ensure_ascii=False, indent=2)
+          
+          print(f'\n🎉 生成 {len(posts)} 篇加密文章')
+          EOF
+      
+      - name: 提交更新
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add posts.json
+          git diff --staged --quiet || git commit -m "🤖 更新密码列表 [skip ci]"
+          git push || true
