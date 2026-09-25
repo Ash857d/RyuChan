@@ -14,7 +14,7 @@ tags:
 categories:
   - 教程
 badge: pin
-password: '1331'
+password: '6202'
 ---
 2026TikTok免拔卡就能刷国际版抖音视频规则和方法（苹果和安卓通用）
 =================
