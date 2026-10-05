@@ -11,7 +11,7 @@ tags:
 categories:
   - 教程
 badge: ''
-password: '6014'
+password: '6715'
 ---
 群组敏感限制
 =================
